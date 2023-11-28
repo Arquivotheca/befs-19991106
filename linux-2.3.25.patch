@@ -1,0 +1,123 @@
+--- linux-2.3.25/Documentation/Configure.help	Sat Nov  6 08:06:53 1999
++++ linux-2.3.befs/Documentation/Configure.help	Sat Nov  6 08:17:25 1999
+@@ -8374,6 +8374,24 @@
+ CONFIG_QNX4FS_RW
+   Say Y if you want to test write support for QNX filesystems.
+ 
++BeOS filesystem support (read only) (EXPERIMENTAL)
++CONFIG_BEFS_FS
++  This is the filesystem used by the BeOS operating system. Say Y if
++  you want to get read access to file on BeOS filesystem partitions of
++  your hard drive or floppy disk.
++
++  This filesystem support is also available as a module ( = code which
++  can be inserted in and removed from the running kernel whenever you
++  want). The module is called befs.o. If you want to compile it as a
++  module, say M here and read Documentation/modules.txt. 
++
++  If unsure, say N.
++
++BeOS filesystem of other platforms support
++CONFIG_BEFS_CONV
++  Say Y if you want to use BeOS filesystem of other platforms (i.e. mount
++  BeOS filesystem of PowerPC on Intel box).
++
+ Kernel automounter support
+ CONFIG_AUTOFS_FS
+   The automounter is a tool to automatically mount remote filesystems
+--- linux-2.3.25/fs/Config.in	Sat Nov  6 08:06:58 1999
++++ linux-2.3.befs/fs/Config.in	Sat Nov  6 08:17:52 1999
+@@ -56,6 +56,12 @@
+       bool '  QNXFS write support (DANGEROUS)' CONFIG_QNX4FS_RW
+    fi    
+ fi
++if [ "$CONFIG_EXPERIMENTAL" = "y" ]; then
++   tristate 'BeOS filesystem support (read only) (EXPERIMENTAL)' CONFIG_BEFS_FS
++   if [ "$CONFIG_BEFS_FS" != "n" ]; then
++      bool '  BeOS filesystem of other platforms support' CONFIG_BEFS_CONV
++   fi
++fi
+ tristate 'ROM filesystem support' CONFIG_ROMFS_FS
+ tristate 'Second extended fs support' CONFIG_EXT2_FS
+ if [ "$CONFIG_EXPERIMENTAL" = "y" ]; then
+--- linux-2.3.25/fs/Makefile	Sat Nov  6 08:06:58 1999
++++ linux-2.3.befs/fs/Makefile	Sat Nov  6 08:36:55 1999
+@@ -18,7 +18,7 @@
+ MOD_LIST_NAME := FS_MODULES
+ ALL_SUB_DIRS = coda minix ext2 fat msdos vfat proc isofs nfs umsdos ntfs \
+ 		hpfs sysv smbfs ncpfs ufs efs affs romfs autofs hfs lockd \
+-		nfsd nls devpts adfs partitions qnx4 udf bfs
++		nfsd nls devpts adfs partitions qnx4 udf bfs befs
+ 
+ SUB_DIRS := partitions
+ 
+@@ -262,6 +262,14 @@
+ else
+   ifeq ($(CONFIG_DEVPTS_FS),m)
+   MOD_SUB_DIRS += devpts
++  endif
++endif
++
++ifeq ($(CONFIG_BEFS_FS),y)
++SUB_DIRS += befs
++else
++  ifeq ($(CONFIG_BEFS_FS),m)
++  MOD_SUB_DIRS += befs
+   endif
+ endif
+ 
+--- linux-2.3.25/fs/filesystems.c	Sat Nov  6 08:06:59 1999
++++ linux-2.3.befs/fs/filesystems.c	Sat Nov  6 16:32:39 1999
+@@ -31,6 +31,7 @@
+ #include <linux/hfs_fs.h>
+ #include <linux/devpts_fs.h>
+ #include <linux/bfs_fs.h>
++#include <linux/befs_fs.h>
+ #include <linux/major.h>
+ #include <linux/smp.h>
+ #include <linux/smp_lock.h>
+@@ -158,6 +159,10 @@
+ 
+ #ifdef CONFIG_BFS_FS
+ 	init_bfs_fs();
++#endif
++   
++#ifdef CONFIG_BEFS_FS
++	init_befs_fs();
+ #endif
+    
+ #ifdef CONFIG_NLS
+--- linux-2.3.25/include/linux/fs.h	Sat Nov  6 08:06:59 1999
++++ linux-2.3.befs/include/linux/fs.h	Sat Nov  6 08:39:36 1999
+@@ -271,6 +271,7 @@
+ #include <linux/bfs_fs_i.h>
+ #include <linux/udf_fs_i.h>
+ #include <linux/ncp_fs_i.h>
++#include <linux/befs_fs_i.h>
+ 
+ /*
+  * Attribute flags.  These should be or-ed together to figure out what
+@@ -395,6 +396,7 @@
+ 		struct bfs_inode_info		bfs_i;
+ 		struct udf_inode_info		udf_i;
+ 		struct ncp_inode_info		ncpfs_i;
++		struct befs_inode_info		befs_i;
+ 		struct socket			socket_i;
+ 		void				*generic_ip;
+ 	} u;
+@@ -527,6 +529,7 @@
+ #include <linux/bfs_fs_sb.h>
+ #include <linux/udf_fs_sb.h>
+ #include <linux/ncp_fs_sb.h>
++#include <linux/befs_fs_sb.h>
+ 
+ extern struct list_head super_blocks;
+ 
+@@ -574,6 +577,7 @@
+ 		struct bfs_sb_info	bfs_sb;
+ 		struct udf_sb_info	udf_sb;
+ 		struct ncp_sb_info	ncpfs_sb;
++		struct befs_sb_info	befs_sb;
+ 		void			*generic_sbp;
+ 	} u;
+ 	/*

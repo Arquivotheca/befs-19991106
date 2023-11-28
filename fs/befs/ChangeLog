@@ -1,0 +1,26 @@
+1999-11-06
+==========
+o Rename filesystem name to befs.
+
+1999-10-17
+==========
+o Fixed cannot compile on 2.3.x kernel.
+
+1999-05-25
+==========
+o Added BFS(ppc) support.
+o Added LinuxPPC support.
+o Added nls (native language support).
+o Fixed using blocksize other than 1024 bytes.
+o Fixed memory leaks.
+o Fixed many bugs.
+
+1999-02-21
+==========
+o Added mount option "uid" and "gid".
+o Added symbolic link support.
+o Fixed many bugs.
+
+1999-02-14
+==========
+o Release first alpha version.
